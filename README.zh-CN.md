@@ -30,6 +30,36 @@
 
 ![墨牍深色主题下的文章阅读界面](docs/images/modu-dark.jpg)
 
+## 从源码构建
+
+需要 Node.js 22+ 与 npm。
+
+**Web 预览** 在 `dist/client` 生成静态站点（`dist/server` 为 SPA 回退 Worker）。浏览器版使用本地演示数据，支持 OPML/文件导入，但不支持联网刷新订阅与应用内更新。
+
+```sh
+npm ci
+npm run build
+npm run preview
+npm run test:sites
+```
+
+**Windows 桌面版** 生成 NSIS 安装包。推荐 Rust + MSVC 目标 + Visual Studio C++ 构建工具；使用 GNU 工具链也可构建：
+
+```sh
+npm ci
+npm run tauri:build:windows
+```
+
+若本机只有 MinGW-w64，需显式切换到 GNU 目标（Windows 打包配置见 `src-tauri/tauri.windows.conf.json`）：
+
+```sh
+MODU_WINDOWS_TARGET=gnu npm run tauri:build:windows
+```
+
+安装包输出在 `src-tauri/target/<target>/release/bundle/nsis/`。Windows 构建不需要 macOS 的更新签名私钥；Windows 端已关闭应用内更新，「设置 → 关于与更新」提供发布页链接供手动下载。旧版 `shidu` 存储键与 `com.yunz.shidu` 迁移路径为兼容性保留。
+
+Windows 图标由现有 PNG 通过 `node scripts/make-windows-icon.mjs` 生成。
+
 ## 开源协议
 
 墨牍采用 [Apache License 2.0](LICENSE)。另见 [第三方声明](THIRD_PARTY_NOTICES.md) 和 [更新日志](CHANGELOG.md)。

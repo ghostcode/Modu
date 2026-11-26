@@ -54,13 +54,53 @@ pub async fn list_system_fonts() -> Result<Vec<String>, String> {
             }
             Ok(fonts)
         }
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "windows")]
         {
-            Err("此版本仅在 macOS 上查询系统字体。".to_string())
+            Ok(windows_system_fonts())
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        {
+            Err("此平台暂不支持自动查询系统字体，仍可手动输入字体名称。".to_string())
         }
     })
     .await
     .map_err(|_| "字体查询未完成，请重试。".to_string())?
+}
+#[cfg(target_os = "windows")]
+fn windows_system_fonts() -> Vec<String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    const SCRIPT: &str = concat!(
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;",
+        "$k='HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts';",
+        "(Get-ItemProperty -LiteralPath $k).PSObject.Properties",
+        "| Where-Object { $_.Name -notlike 'PS*' }",
+        "| ForEach-Object { $_.Name }",
+    );
+    let output = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", SCRIPT])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+        .ok();
+    let mut fonts = output
+        .filter(|result| result.status.success())
+        .map(|result| String::from_utf8_lossy(&result.stdout).into_owned())
+        .unwrap_or_default()
+        .lines()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(|name| {
+            let name = name.trim_end_matches(|c: char| c == ')' || c.is_whitespace());
+            match name.rfind(" (") {
+                Some(index) => name[..index].trim().to_string(),
+                None => name.to_string(),
+            }
+        })
+        .filter(|name| !name.is_empty())
+        .collect::<Vec<_>>();
+    fonts.sort();
+    fonts.dedup();
+    fonts
 }
 #[tauri::command]
 pub fn record_feed_failure(
@@ -121,22 +161,37 @@ pub fn create_main_window(app: &tauri::App, theme: &str, locale: &str) -> tauri:
         builder.background_color(color).build()?
     };
     restore_window_size(&window);
-    let menu = tauri::menu::Menu::default(app.handle())?;
     let (settings_label, updates_label) = menu_labels(locale);
-    if let Some(tauri::menu::MenuItemKind::Submenu(submenu)) = menu.items()?.first() {
-        let settings = tauri::menu::MenuItem::with_id(
-            app,
-            "app-settings",
-            settings_label,
-            true,
-            Some("CmdOrCtrl+,"),
-        )?;
-        let updates =
-            tauri::menu::MenuItem::with_id(app, "app-updates", updates_label, true, None::<&str>)?;
-        submenu.insert(&settings, 1)?;
-        submenu.insert(&updates, 2)?;
+    let settings = tauri::menu::MenuItem::with_id(
+        app,
+        "app-settings",
+        settings_label,
+        true,
+        Some("CmdOrCtrl+,"),
+    )?;
+    let updates =
+        tauri::menu::MenuItem::with_id(app, "app-updates", updates_label, true, None::<&str>)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let menu = tauri::menu::Menu::default(app.handle())?;
+        if let Some(tauri::menu::MenuItemKind::Submenu(submenu)) = menu.items()?.first() {
+            submenu.insert(&settings, 1)?;
+            submenu.insert(&updates, 2)?;
+        }
+        app.set_menu(menu)?;
     }
-    app.set_menu(menu)?;
+    #[cfg(not(target_os = "macos"))]
+    {
+        let submenu = tauri::menu::Submenu::with_items(
+            app,
+            if locale == "en" { "App" } else { "应用" },
+            true,
+            &[&settings, &updates],
+        )?;
+        let menu = tauri::menu::Menu::with_items(app, &[&submenu])?;
+        app.set_menu(menu)?;
+    }
     Ok(())
 }
 pub fn handle_menu(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {

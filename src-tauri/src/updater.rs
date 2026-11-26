@@ -10,6 +10,14 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::watch;
 
 pub const RELEASES_URL: &str = "https://github.com/Yunz93/Modu/releases";
+#[cfg(target_os = "windows")]
+fn platform_update_check() -> Result<(), String> {
+    Err("Windows 版本暂不支持应用内更新，请从发布页面下载安装包。".into())
+}
+#[cfg(not(target_os = "windows"))]
+fn platform_update_check() -> Result<(), String> {
+    Ok(())
+}
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
@@ -98,6 +106,7 @@ pub async fn check_app_update(
     app: AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<UpdateInfo>, String> {
+    platform_update_check()?;
     let _busy = acquire(&state.updates)?;
     let mut cancel = state.updates.cancel.subscribe();
     let epoch = *cancel.borrow();

@@ -16,3 +16,4 @@ docs/screenshots/
 docs/validation/
 .qa/
 src-tauri/gen/
+/.workbuddy
