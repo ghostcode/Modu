@@ -49,6 +49,8 @@ export type Preferences = {
   singleKeyShortcuts?: boolean;
   uiFontFamily?: string;
   readingFontFamily?: string;
+  sidebarWidth?: number;
+  articleListWidth?: number;
 };
 export type Library = {
   version: 1;

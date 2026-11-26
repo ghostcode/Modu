@@ -116,8 +116,8 @@ body:has(.desktop-frame) {
   background: var(--canvas);
 }
 .app-shell {
-  --sidebar-width: 16.55vw;
-  --article-list-width: minmax(310px, 26.8vw);
+  --sidebar-width: clamp(160px, 16.55vw, 480px);
+  --article-list-width: clamp(310px, 26.8vw, 720px);
   position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
@@ -126,6 +126,48 @@ body:has(.desktop-frame) {
   overflow: hidden;
   color: var(--ink);
   background: var(--canvas);
+}
+.column-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  width: 11px;
+  margin-left: -5px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.column-resizer::after {
+  content: "";
+  width: 1px;
+  background: transparent;
+  transition: background-color 120ms ease, width 120ms ease;
+}
+.column-resizer:hover::after,
+.column-resizer[data-active]::after {
+  width: 3px;
+  background: var(--accent);
+}
+.column-resizer:focus-visible::after {
+  width: 3px;
+  background: var(--focus);
+}
+.sidebar-resizer {
+  left: var(--sidebar-width);
+}
+.list-resizer {
+  left: calc(var(--sidebar-width) + var(--article-list-width));
+}
+body.column-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+body.column-resizing * {
+  cursor: col-resize !important;
 }
 .skip-link {
   position: fixed;
@@ -1180,6 +1222,9 @@ kbd {
   .app-shell {
     grid-template-columns: 285px minmax(0, 1fr);
   }
+  .column-resizer {
+    display: none;
+  }
   .app-shell > .sidebar {
     display: none;
   }
@@ -1896,6 +1941,33 @@ body:has(.desktop-frame) .settings-dialog {
 .manager-folder-toggle:focus-visible {
   outline-offset: -2px;
 }
+.manager-folder-edit {
+  margin-inline-start: auto;
+  opacity: 0.65;
+}
+.manager-folder:hover .manager-folder-edit,
+.manager-folder-edit:focus-visible {
+  opacity: 1;
+}
+.manager-folder-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.manager-folder-form input {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--canvas);
+  color: var(--ink);
+}
+.manager-folder-form .form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
 .manager-folder-toggle > svg:first-child {
   flex: 0 0 auto;
   color: var(--muted);
@@ -2036,6 +2108,11 @@ body:has(.desktop-frame) .settings-dialog {
 }
 .settings-row > button:hover { background: var(--selected); }
 .settings-row input { accent-color: var(--accent); }
+.settings-library {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
 .settings-storage { padding: 8px 0; }
 .settings-storage p { overflow-wrap: anywhere; margin: 6px 0; }
 .settings-archived { margin-top: 24px; }

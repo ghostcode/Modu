@@ -67,10 +67,27 @@ export function isFontName(value: unknown): value is string {
   );
 }
 
+export const columnWidthRange = {
+  sidebar: { min: 160, max: 480 },
+  articleList: { min: 260, max: 720 },
+} as const;
+
+function normalizedColumnWidth(value: unknown, min: number, max: number): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max
+    ? Math.round(value)
+    : undefined;
+}
+
 export function normalizePreferences(preferences: Preferences): Preferences {
   const { fontSize, uiFontSize } = preferences;
   return {
     ...preferences,
+    sidebarWidth: normalizedColumnWidth(
+      preferences.sidebarWidth, columnWidthRange.sidebar.min, columnWidthRange.sidebar.max,
+    ),
+    articleListWidth: normalizedColumnWidth(
+      preferences.articleListWidth, columnWidthRange.articleList.min, columnWidthRange.articleList.max,
+    ),
     locale: preferences.locale === "en" ? "en" : "zh-CN",
     followSystemTheme: preferences.followSystemTheme === true,
     uiFontSize: Number.isInteger(uiFontSize) && isFontSizeInRange(uiFontSize, storedUiSizeRange)

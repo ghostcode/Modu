@@ -3,7 +3,6 @@ import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   BookOpenIcon,
-  DatabaseIcon,
   InfoIcon,
   KeyboardIcon,
   PaletteIcon,
@@ -19,8 +18,7 @@ import type { Preferences, Source } from "./model";
 const sections = [
   { id: "appearance", label: "界面", icon: PaletteIcon },
   { id: "reading", label: "阅读", icon: BookOpenIcon },
-  { id: "subscriptions", label: "管理订阅", icon: RssIcon },
-  { id: "library", label: "阅读库", icon: DatabaseIcon },
+  { id: "subscriptions", label: "订阅", icon: RssIcon },
   { id: "shortcuts", label: "快捷键", icon: KeyboardIcon },
   { id: "updates", label: "关于与更新", icon: InfoIcon },
 ] as const;
@@ -46,6 +44,7 @@ type Props = {
   sources: Source[];
   unreadBySource: ReadonlyMap<string, number>;
   onEditSource: (source: Source, name: string, path: string[]) => Promise<void>;
+  onRenameFolder: (path: string[], name: string) => Promise<void>;
   onArchiveSource: (source: Source) => void;
   onMoveSource: (source: Source, direction: -1 | 1) => void;
   canMoveSource: (id: string, direction: -1 | 1) => boolean;
@@ -72,6 +71,7 @@ export function SettingsDialog({
   sources,
   unreadBySource,
   onEditSource,
+  onRenameFolder,
   onArchiveSource,
   onMoveSource,
   canMoveSource,
@@ -155,13 +155,12 @@ export function SettingsDialog({
                   unreadBySource={unreadBySource}
                   busy={sourceBusy}
                   onEdit={onEditSource}
+                  onRenameFolder={onRenameFolder}
                   onArchive={onArchiveSource}
                   onMove={onMoveSource}
                   canMove={canMoveSource}
                 />
-              </div>
-              {section === "library" && (
-                <>
+                <div className="settings-library">
                   <div className="settings-storage">
                     <strong>{dataPath ? t("本机阅读库") : t("浏览器阅读库")}</strong>
                     <p>
@@ -262,8 +261,8 @@ export function SettingsDialog({
                       ))}
                     </section>
                   )}
-                </>
-              )}
+                </div>
+              </div>
               {section === "shortcuts" && (
                 <>
                   <label className="settings-row">

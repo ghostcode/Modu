@@ -333,7 +333,11 @@ const english: Record<string, string> = {
   "下移 {0}": "Move {0} down",
   "展开 {0}": "Expand {0}",
   "收起 {0}": "Collapse {0}",
-  "关闭设置": "Close settings"
+  "关闭设置": "Close settings",
+  "编辑文件夹 {0}": "Edit folder {0}",
+  "文件夹名称": "Folder name",
+  "调整侧栏宽度": "Resize sidebar",
+  "调整文章列表宽度": "Resize article list"
 };
 
 type Values = readonly (string | number | undefined)[];

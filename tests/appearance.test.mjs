@@ -51,8 +51,24 @@ test("legacy appearance settings gain optional fields without resetting existing
     singleKeyShortcuts: true,
     uiFontFamily: "",
     readingFontFamily: "",
+    sidebarWidth: undefined,
+    articleListWidth: undefined,
   });
   assert.deepEqual(normalizePreferences(result), result);
+});
+
+test("column widths accept valid pixels and drop out-of-range values", () => {
+  const base = { fontSize: 20, font: "sans", theme: "paper" };
+  const valid = normalizePreferences({
+    ...base, sidebarWidth: 240.6, articleListWidth: 380,
+  });
+  assert.equal(valid.sidebarWidth, 241);
+  assert.equal(valid.articleListWidth, 380);
+  const invalid = normalizePreferences({
+    ...base, sidebarWidth: 9999, articleListWidth: -5,
+  });
+  assert.equal(invalid.sidebarWidth, undefined);
+  assert.equal(invalid.articleListWidth, undefined);
 });
 
 test("interface starts at 14 px and reading at 16 px with the same system font", () => {

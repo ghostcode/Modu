@@ -55,6 +55,7 @@ import { SubscriptionList } from "./SubscriptionList";
 import { SourceEditDialog } from "./SourceEditDialog";
 import {
   canReorderSource,
+  folderPath,
   orderSources,
   reorderedSourceIds,
 } from "./source-layout";
@@ -70,9 +71,11 @@ import {
 } from "./desktop";
 import {
   applyAppearance,
+  columnWidthRange,
   effectiveAppearance,
   normalizePreferences,
 } from "./appearance";
+import { ColumnResizer } from "./ColumnResizer";
 import { fontSizes } from "./font-sizes";
 
 function loadLibrary(): { library: Library; error: string } {
@@ -175,6 +178,26 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
       ...current,
       preferences: { ...current.preferences, ...patch },
     }));
+  };
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [draftWidths, setDraftWidths] = useState<{
+    sidebar?: number;
+    articleList?: number;
+  }>({});
+  const effectiveSidebarWidth = draftWidths.sidebar ?? library.preferences.sidebarWidth;
+  const effectiveArticleWidth = draftWidths.articleList ?? library.preferences.articleListWidth;
+  const shellStyle: React.CSSProperties & Record<string, string> = {};
+  if (effectiveSidebarWidth != null) shellStyle["--sidebar-width"] = `${effectiveSidebarWidth}px`;
+  if (effectiveArticleWidth != null) shellStyle["--article-list-width"] = `${effectiveArticleWidth}px`;
+  const measureSidebar = () =>
+    shellRef.current?.querySelector(".sidebar")?.getBoundingClientRect().width ?? 0;
+  const measureArticleList = () =>
+    shellRef.current?.querySelector(".article-list")?.getBoundingClientRect().width ?? 0;
+  const setDraftWidth = (key: "sidebar" | "articleList", width: number) =>
+    setDraftWidths((current) => ({ ...current, [key]: width }));
+  const commitWidth = (key: "sidebar" | "articleList", width: number) => {
+    patchPreferences(key === "sidebar" ? { sidebarWidth: width } : { articleListWidth: width });
+    setDraftWidths((current) => ({ ...current, [key]: undefined }));
   };
   const openSettings = useCallback(
     (section: SettingsSection = "appearance", trigger?: HTMLElement) => {
@@ -784,6 +807,19 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
       setSourceBusy(false);
     }
   };
+  const renameFolder = async (path: string[], name: string) => {
+    const nextPrefix = [...path.slice(0, -1), name];
+    if (JSON.stringify(path) === JSON.stringify(nextPrefix)) return;
+    const affected = orderedSources.filter((source) => {
+      const sourcePath = folderPath(source);
+      return sourcePath.length >= path.length &&
+        path.every((part, index) => sourcePath[index] === part);
+    });
+    for (const source of affected) {
+      const sourcePath = folderPath(source);
+      await editSource(source, source.name, [...nextPrefix, ...sourcePath.slice(path.length)]);
+    }
+  };
   const moveSource = (source: Source, direction: -1 | 1) => {
     const ids = reorderedSourceIds(orderedSources, source.id, direction);
     if (ids) patchPreferences({ feedOrder: ids, sortFeedsByName: false });
@@ -1079,7 +1115,7 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
             <span className="sr-only">{t(storageError)}</span>
             <button
               className="quiet-button"
-              onClick={(event) => openSettings("library", event.currentTarget)}
+              onClick={(event) => openSettings("subscriptions", event.currentTarget)}
             >
               {t("保存出现问题")}
             </button>
@@ -1091,11 +1127,25 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
 
   const content = (
     <div
+      ref={shellRef}
+      style={shellStyle}
       className={`app-shell ${focus ? "is-focused" : ""} ${mobileReader ? "show-reader" : ""}`}
     >
       <a className="skip-link" href="#main-content">
         {t("跳到正文")}
       </a>
+      <ColumnResizer
+        className="column-resizer sidebar-resizer"
+        label={t("调整侧栏宽度")}
+        min={columnWidthRange.sidebar.min}
+        max={columnWidthRange.sidebar.max}
+        readerMin={320}
+        measure={measureSidebar}
+        measureOther={measureArticleList}
+        value={effectiveSidebarWidth}
+        onChange={(width) => setDraftWidth("sidebar", width)}
+        onCommit={(width) => commitWidth("sidebar", width)}
+      />
       {renderSidebar()}
       <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
         <Dialog.Trigger asChild>
@@ -1442,6 +1492,18 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
           )}
         </div>
       </section>
+      <ColumnResizer
+        className="column-resizer list-resizer"
+        label={t("调整文章列表宽度")}
+        min={columnWidthRange.articleList.min}
+        max={columnWidthRange.articleList.max}
+        readerMin={320}
+        measure={measureArticleList}
+        measureOther={measureSidebar}
+        value={effectiveArticleWidth}
+        onChange={(width) => setDraftWidth("articleList", width)}
+        onCommit={(width) => commitWidth("articleList", width)}
+      />
       <Reader
         article={article}
         source={source}
@@ -1738,6 +1800,7 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
         sources={orderedSources}
         unreadBySource={unreadBySource}
         onEditSource={(source, name, path) => editSource(source, name, path)}
+        onRenameFolder={renameFolder}
         onArchiveSource={(source) => void setSourceArchived(source, true)}
         onMoveSource={moveSource}
         canMoveSource={canMoveSource}
