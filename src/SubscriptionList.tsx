@@ -1,8 +1,15 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { RssSimpleIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  PencilSimpleIcon,
+  RssSimpleIcon,
+  TrashIcon,
+  WarningCircleIcon,
+} from "@phosphor-icons/react";
 import { useTranslation } from "./locale-context";
 import type { Source } from "./model";
-import { groupSources } from "./source-layout";
+import { canReorderSource, groupSources } from "./source-layout";
 
 const swipeThreshold = 40;
 const wheelGestureGap = 160;
@@ -28,6 +35,8 @@ export function SubscriptionList({
   selectedId,
   busy,
   onSelect,
+  onEdit,
+  onMove,
   onUnsubscribe,
 }: {
   sources: Source[];
@@ -35,6 +44,8 @@ export function SubscriptionList({
   selectedId: string | null;
   busy: boolean;
   onSelect: (id: string) => void;
+  onEdit: (source: Source) => void;
+  onMove: (source: Source, direction: -1 | 1) => void;
   onUnsubscribe: (source: Source) => void;
 }) {
   const { t, locale } = useTranslation();
@@ -42,7 +53,6 @@ export function SubscriptionList({
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
   const [openId, setOpenId] = useState<string | null>(null);
-  const groups = useMemo(() => groupSources(sources), [sources]);
 
   useEffect(() => {
     const nav = list.current;
@@ -83,7 +93,7 @@ export function SubscriptionList({
     suppressClick.current = false;
     if (!(event.target instanceof Element) || !event.target.closest(".source-item")) return;
     const row = sourceRow(event.target);
-    const width = row?.querySelector<HTMLButtonElement>(".source-unsubscribe")?.offsetWidth;
+    const width = row?.querySelector<HTMLElement>(".source-actions")?.offsetWidth;
     if (!row || !width) return;
     drag.current = {
       row,
@@ -132,7 +142,7 @@ export function SubscriptionList({
       setOpenId((current) => current === gesture.row.dataset.sourceId ? null : current);
   }
 
-  function renderGroup(group: typeof groups, depth: number): ReactNode {
+  function renderGroup(group: ReturnType<typeof groupSources>, depth: number): ReactNode {
     return <>
       {group.name && <h3 className="source-folder" style={{ paddingInlineStart: Math.min(depth, 4) * 8 + 7 }}>{group.name}</h3>}
       {group.sources.map((source) => {
@@ -169,20 +179,47 @@ export function SubscriptionList({
                 <span className="nav-count source-count" aria-label={t("{0} 篇未读", [unread])}>{unread}</span>
               )}
             </button>
-            <button
-              className="source-unsubscribe"
-              aria-label={t("取消订阅 {0}", [source.name])}
-              aria-hidden={!opened || undefined}
-              tabIndex={opened ? undefined : -1}
-              disabled={busy}
-              inert={!opened}
-              onClick={() => {
-                onUnsubscribe(source);
-                setOpenId(null);
-              }}
-            >
-              {t("取消订阅")}
-            </button>
+            <div className="source-actions" aria-hidden={!opened || undefined}>
+              <button
+                className="source-action"
+                aria-label={t("编辑 {0}", [source.name])}
+                title={t("编辑")}
+                inert={!opened}
+                onClick={() => { onEdit(source); setOpenId(null); }}
+              >
+                <PencilSimpleIcon size={18} aria-hidden="true" />
+              </button>
+              <button
+                className="source-action"
+                aria-label={t("上移 {0}", [source.name])}
+                title={t("上移")}
+                disabled={busy || !canReorderSource(sources, source.id, -1)}
+                inert={!opened}
+                onClick={() => { onMove(source, -1); setOpenId(null); }}
+              >
+                <ArrowUpIcon size={18} aria-hidden="true" />
+              </button>
+              <button
+                className="source-action"
+                aria-label={t("下移 {0}", [source.name])}
+                title={t("下移")}
+                disabled={busy || !canReorderSource(sources, source.id, 1)}
+                inert={!opened}
+                onClick={() => { onMove(source, 1); setOpenId(null); }}
+              >
+                <ArrowDownIcon size={18} aria-hidden="true" />
+              </button>
+              <button
+                className="source-action source-remove"
+                aria-label={t("取消订阅 {0}", [source.name])}
+                title={t("取消订阅")}
+                disabled={busy}
+                inert={!opened}
+                onClick={() => { onUnsubscribe(source); setOpenId(null); }}
+              >
+                <TrashIcon size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         );
       })}
@@ -214,7 +251,7 @@ export function SubscriptionList({
         setOpenId(null);
       }}
     >
-      {renderGroup(groups, 0)}
+      {renderGroup(groupSources(sources), 0)}
     </nav>
   );
 }

@@ -258,7 +258,7 @@ body:has(.desktop-frame) {
   outline-offset: -2px;
 }
 .source-row {
-  --source-action-width: min(5.4rem, 49%);
+  --source-action-width: min(9.5rem, 76%);
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-control);
@@ -266,7 +266,7 @@ body:has(.desktop-frame) {
   touch-action: pan-y pinch-zoom;
 }
 .source-row:lang(en) {
-  --source-action-width: min(7rem, 59%);
+  --source-action-width: min(10.5rem, 80%);
 }
 .source-row:is([data-open], [data-dragging]) {
   background: var(--hover);
@@ -300,29 +300,51 @@ body:has(.desktop-frame) {
 .source-row:is([data-open], [data-dragging]) .source-item:active:not(:disabled) {
   transform: none;
 }
-.source-unsubscribe {
+.source-actions {
   position: absolute;
   inset: 0 0 0 auto;
+  display: flex;
   width: var(--source-action-width);
-  padding: 0 4px;
   border-inline-start: 1px solid var(--line);
-  font-size: calc(14px + var(--ui-size-offset, 0px));
-  font-weight: 550;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-  color: var(--danger);
   background: var(--hover);
   translate: var(--source-action-shift, 100%);
-  transition: translate 170ms ease-out, background-color 120ms;
+  transition: translate 170ms ease-out;
 }
-.source-row[data-dragging] .source-unsubscribe {
+.source-row[data-dragging] .source-actions {
   transition: none;
 }
-.source-unsubscribe:not(:disabled):hover {
-  background: color-mix(in srgb, var(--danger) 10%, var(--hover));
+.source-action {
+  flex: 1 1 0;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 0;
+  border-inline-start: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
 }
-.source-unsubscribe:focus-visible {
+.source-action:first-child {
+  border-inline-start: 0;
+}
+.source-action:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--hover));
+  color: var(--accent);
+}
+.source-action:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+.source-action:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.source-action.source-remove {
+  color: var(--danger);
+}
+.source-action.source-remove:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 12%, var(--hover));
+  color: var(--danger);
 }
 .source-item svg {
   color: var(--accent);
@@ -970,20 +992,20 @@ button.full-text-action:hover {
   right: 18px;
   color: var(--muted);
 }
-.subscription-dialog form {
+:is(.subscription-dialog form, .source-edit-form) {
   margin-top: 25px;
 }
-.subscription-dialog label {
+:is(.subscription-dialog label, .source-edit-form label) {
   display: block;
   font-size: calc(13px + var(--ui-size-offset, 0px));
   margin: 17px 0 8px;
 }
-.subscription-dialog label span {
+:is(.subscription-dialog label span, .source-edit-form label span) {
   margin-left: 6px;
   color: var(--muted);
   font-size: calc(12px + var(--ui-size-offset, 0px));
 }
-.subscription-dialog input:not([type="file"]) {
+:is(.subscription-dialog input:not([type="file"]), .source-edit-form input:not([type="file"])) {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--line);
@@ -1835,6 +1857,121 @@ body:has(.desktop-frame) .settings-dialog {
 .settings-footer .primary-button {
   min-height: 36px;
   font-size: calc(14px + var(--ui-size-offset, 0px));
+}
+
+.manager-hint {
+  color: var(--muted);
+  font-size: calc(13px + var(--ui-size-offset, 0px));
+  line-height: 1.7;
+  margin: -6px 0 16px;
+}
+.manager-list {
+  border-block: 1px solid var(--line);
+}
+.manager-folder {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding-block: 5px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--muted) 6%, transparent);
+}
+.manager-folder-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: calc(13px + var(--ui-size-offset, 0px));
+  font-weight: 600;
+  text-align: start;
+}
+.manager-folder-toggle:hover {
+  background: var(--hover);
+}
+.manager-folder-toggle:focus-visible {
+  outline-offset: -2px;
+}
+.manager-folder-toggle > svg:first-child {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.manager-folder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manager-folder-count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: calc(11px + var(--ui-size-offset, 0px));
+  font-weight: 400;
+}
+.manager-empty {
+  color: var(--muted);
+  padding: 28px 4px;
+  text-align: center;
+}
+.manager-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.manager-row:last-child {
+  border-bottom: 0;
+}
+.manager-editing {
+  display: block;
+}
+.manager-editing .source-edit-form {
+  margin-top: 0;
+}
+.manager-info {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.manager-name {
+  font-weight: 600;
+  font-size: calc(14px + var(--ui-size-offset, 0px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manager-meta {
+  color: var(--muted);
+  font-size: calc(12px + var(--ui-size-offset, 0px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manager-url {
+  color: var(--muted);
+  font-size: calc(11px + var(--ui-size-offset, 0px));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manager-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.manager-actions .icon-button {
+  min-width: 34px;
+  min-height: 34px;
+}
+.manager-actions .manager-remove {
+  color: var(--danger);
 }
 .settings-nav button {
   display: flex;

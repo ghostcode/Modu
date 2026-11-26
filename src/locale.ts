@@ -319,7 +319,21 @@ const english: Record<string, string> = {
   "保存网站或订阅链接，也可以从文件导入文章。": "Save a website or feed URL, or import articles from a file.",
   "网站提供 RSS 或 Atom 时会自动识别。读取期间可以关闭取消。": "Modu finds RSS or Atom feeds automatically. Close this dialog to cancel fetching.",
   "在桌面版打开阅读库后，可刷新获取文章。": "Open this library in the desktop app and refresh to fetch articles.",
-  "请输入以 http:// 或 https:// 开头的网站或 RSS 地址。": "Enter a website or RSS URL starting with http:// or https://."
+  "请输入以 http:// 或 https:// 开头的网站或 RSS 地址。": "Enter a website or RSS URL starting with http:// or https://.",
+  "管理订阅": "Manage feeds",
+  "在这里编辑名称与分组、调整顺序或取消订阅。": "Rename, regroup, reorder, or unsubscribe from your feeds.",
+  "编辑名称与分组、调整顺序或取消订阅。": "Rename, regroup, reorder, or unsubscribe from your feeds.",
+  "打开": "Open",
+  "还没有订阅。": "No feeds yet.",
+  "编辑": "Edit",
+  "编辑 {0}": "Edit {0}",
+  "上移": "Move up",
+  "上移 {0}": "Move {0} up",
+  "下移": "Move down",
+  "下移 {0}": "Move {0} down",
+  "展开 {0}": "Expand {0}",
+  "收起 {0}": "Collapse {0}",
+  "关闭设置": "Close settings"
 };
 
 type Values = readonly (string | number | undefined)[];

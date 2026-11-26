@@ -4,6 +4,16 @@ export function folderPath(source: Source): string[] {
   return source.folderPath ?? (typeof source.folder === "string" && source.folder ? [source.folder] : []);
 }
 
+/** Parse a user-entered folder string ("技术 / Rust") into a normalized path. */
+export function parseFolderPath(input: string): string[] {
+  return input
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 32)
+    .map((part) => part.slice(0, 120));
+}
+
 export function orderSources(sources: Source[], preferences: Preferences, locale: string) {
   const active = sources.filter((source) => !source.archived);
   if (preferences.sortFeedsByName === true) {
@@ -46,6 +56,16 @@ export function availableFolders(sources: Source[]) {
     }
   }
   return folders;
+}
+
+export function canReorderSource(sources: Source[], id: string, direction: -1 | 1) {
+  const index = sources.findIndex((source) => source.id === id);
+  if (index < 0) return false;
+  const group = JSON.stringify(folderPath(sources[index]));
+  let sibling = index + direction;
+  while (sibling >= 0 && sibling < sources.length &&
+    JSON.stringify(folderPath(sources[sibling])) !== group) sibling += direction;
+  return sibling >= 0 && sibling < sources.length;
 }
 
 export function reorderedSourceIds(sources: Source[], id: string, direction: -1 | 1) {

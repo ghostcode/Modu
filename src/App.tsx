@@ -53,7 +53,11 @@ import { CloseRecoveryDialog } from "./CloseRecoveryDialog";
 import { SubscriptionDialog, type Submission } from "./SubscriptionDialog";
 import { SubscriptionList } from "./SubscriptionList";
 import { SourceEditDialog } from "./SourceEditDialog";
-import { orderSources, reorderedSourceIds } from "./source-layout";
+import {
+  canReorderSource,
+  orderSources,
+  reorderedSourceIds,
+} from "./source-layout";
 import {
   desktop,
   native,
@@ -780,6 +784,12 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
       setSourceBusy(false);
     }
   };
+  const moveSource = (source: Source, direction: -1 | 1) => {
+    const ids = reorderedSourceIds(orderedSources, source.id, direction);
+    if (ids) patchPreferences({ feedOrder: ids, sortFeedsByName: false });
+  };
+  const canMoveSource = (id: string, direction: -1 | 1) =>
+    canReorderSource(orderedSources, id, direction);
   const exportLibrary = async (
     name: string,
     contents: string,
@@ -1036,6 +1046,8 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
           selectedId={sourceId}
           busy={sourceBusy}
           onSelect={(id) => navigate("all", id)}
+          onEdit={(source) => setSourceToEdit(source)}
+          onMove={moveSource}
           onUnsubscribe={(source) => void setSourceArchived(source, true, drawer)}
         />
       </section>
@@ -1723,6 +1735,12 @@ function ReaderApp({ loaded }: { loaded: Loaded | null }) {
           }
           await exportLibrary("墨牍-订阅.opml", exportOpml(sources), "opml");
         }}
+        sources={orderedSources}
+        unreadBySource={unreadBySource}
+        onEditSource={(source, name, path) => editSource(source, name, path)}
+        onArchiveSource={(source) => void setSourceArchived(source, true)}
+        onMoveSource={moveSource}
+        canMoveSource={canMoveSource}
         updatePanel={
           desktop ? (
             updatePanel

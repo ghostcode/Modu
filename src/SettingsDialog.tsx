@@ -8,14 +8,18 @@ import {
   KeyboardIcon,
   PaletteIcon,
   CheckIcon,
+  RssIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { InterfaceSettings } from "./InterfaceSettings";
 import { ReadingSettings, useFontChoices } from "./TypographySettings";
+import { SubscriptionManager } from "./SubscriptionManager";
 import type { Preferences, Source } from "./model";
 
 const sections = [
   { id: "appearance", label: "界面", icon: PaletteIcon },
   { id: "reading", label: "阅读", icon: BookOpenIcon },
+  { id: "subscriptions", label: "管理订阅", icon: RssIcon },
   { id: "library", label: "阅读库", icon: DatabaseIcon },
   { id: "shortcuts", label: "快捷键", icon: KeyboardIcon },
   { id: "updates", label: "关于与更新", icon: InfoIcon },
@@ -39,6 +43,12 @@ type Props = {
   onExportBackup: () => Promise<void>;
   onRestoreBackup: () => void;
   onExportOpml: () => Promise<void>;
+  sources: Source[];
+  unreadBySource: ReadonlyMap<string, number>;
+  onEditSource: (source: Source, name: string, path: string[]) => Promise<void>;
+  onArchiveSource: (source: Source) => void;
+  onMoveSource: (source: Source, direction: -1 | 1) => void;
+  canMoveSource: (id: string, direction: -1 | 1) => boolean;
   updatePanel: ReactNode;
 };
 
@@ -59,6 +69,12 @@ export function SettingsDialog({
   onExportBackup,
   onRestoreBackup,
   onExportOpml,
+  sources,
+  unreadBySource,
+  onEditSource,
+  onArchiveSource,
+  onMoveSource,
+  canMoveSource,
   updatePanel,
 }: Props) {
   const { t } = useTranslation();
@@ -131,6 +147,17 @@ export function SettingsDialog({
                   preferences={preferences}
                   fonts={fonts}
                   onChange={onPreferences}
+                />
+              </div>
+              <div hidden={section !== "subscriptions"} inert={locked}>
+                <SubscriptionManager
+                  sources={sources}
+                  unreadBySource={unreadBySource}
+                  busy={sourceBusy}
+                  onEdit={onEditSource}
+                  onArchive={onArchiveSource}
+                  onMove={onMoveSource}
+                  canMove={canMoveSource}
                 />
               </div>
               {section === "library" && (
@@ -306,6 +333,13 @@ export function SettingsDialog({
               </Dialog.Close>
             </footer>
           </div>
+          <Dialog.Close
+            className="icon-button dialog-close"
+            aria-label={t("关闭设置")}
+            disabled={locked}
+          >
+            <XIcon size={21} aria-hidden="true" />
+          </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
